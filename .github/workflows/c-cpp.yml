@@ -1,0 +1,47 @@
+name: Build Bluetooth Kernel Module (aarch64)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-module:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout kernel source
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y gcc-aarch64-linux-gnu make bc flex bison libssl-dev libelf-dev dwarves
+
+    - name: Set environment variables
+      run: |
+        echo "CROSS_COMPILE=aarch64-linux-gnu-" >> $GITHUB_ENV
+        echo "ARCH=arm64" >> $GITHUB_ENV
+
+    - name: Configure kernel for module build
+      run: |
+        make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- defconfig
+        scripts/config --enable CONFIG_BT
+        scripts/config --module CONFIG_BT_HCIUART
+        scripts/config --module CONFIG_BT_HCIBTUSB
+        scripts/config --module CONFIG_BT_BREDR
+        scripts/config --module CONFIG_BT_RFCOMM
+        scripts/config --module CONFIG_BT_RFCOMM_TTY
+        make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
+
+    - name: Build modules
+      run: |
+        make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- modules -j$(nproc)
+
+    - name: Upload compiled modules
+      uses: actions/upload-artifact@v4
+      with:
+        name: bt-modules-aarch64
+        path: |
+          drivers/bluetooth/*.ko
+          net/bluetooth/*.ko
