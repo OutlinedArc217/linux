@@ -1,45 +1,59 @@
-name: Build GNSS Modules
+name: Build GNSS + Sound Kernel Modules (aarch64)
 
 on:
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
-  build-gnss:
+  build-module:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout source
+    - name: Checkout kernel source
       uses: actions/checkout@v4
 
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install -y build-essential libncurses-dev flex bison libssl-dev bc wget dwarves
+        sudo apt install -y gcc-aarch64-linux-gnu make bc flex bison libssl-dev libelf-dev dwarves
 
-    - name: Prepare .config with GNSS enabled
-      working-directory: kernel
+    - name: Set environment variables
       run: |
-        make defconfig
+        echo "CROSS_COMPILE=aarch64-linux-gnu-" >> $GITHUB_ENV
+        echo "ARCH=arm64" >> $GITHUB_ENV
 
-        # 启用 GNSS 相关选项
+    - name: Configure kernel for GNSS and Sound modules
+      run: |
+        make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- defconfig
         scripts/config --enable CONFIG_GNSS
         scripts/config --module CONFIG_GNSS_SERIAL
         scripts/config --module CONFIG_GNSS_SIRF
         scripts/config --module CONFIG_GNSS_UBX
         scripts/config --module CONFIG_GNSS_MTK
 
-        make olddefconfig
+        scripts/config --enable CONFIG_SND
+        scripts/config --enable CONFIG_SND_SOC
+        scripts/config --module CONFIG_SND_SOC_GENERIC_DMAENGINE_PCM
+        scripts/config --module CONFIG_SND_SOC_QCOM
+        scripts/config --module CONFIG_SND_SOC_MSM8916
 
-    - name: Build GNSS modules
-      working-directory: kernel
+        make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
+
+    - name: Build GNSS modules only
       run: |
-        make -j$(nproc) M=drivers/gnss modules
-        make -j$(nproc) M=drivers/gnss/serial modules
+        make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- M=drivers/gnss modules -j$(nproc)
+        make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- M=drivers/gnss/serial modules -j$(nproc)
 
-    - name: Upload GNSS .ko modules
+    - name: Build Sound modules only
+      run: |
+        make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- M=sound/soc modules -j$(nproc)
+
+    - name: Upload compiled modules
       uses: actions/upload-artifact@v4
       with:
-        name: gnss-modules
+        name: gnss-sound-modules-aarch64
         path: |
-          kernel/drivers/gnss/*.ko
-          kernel/drivers/gnss/serial/*.ko
+          drivers/gnss/*.ko
+          drivers/gnss/serial/*.ko
+          sound/soc/*.ko
