@@ -1,0 +1,45 @@
+name: Build GNSS Modules
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-gnss:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential libncurses-dev flex bison libssl-dev bc wget dwarves
+
+    - name: Prepare .config with GNSS enabled
+      working-directory: kernel
+      run: |
+        make defconfig
+
+        # 启用 GNSS 相关选项
+        scripts/config --enable CONFIG_GNSS
+        scripts/config --module CONFIG_GNSS_SERIAL
+        scripts/config --module CONFIG_GNSS_SIRF
+        scripts/config --module CONFIG_GNSS_UBX
+        scripts/config --module CONFIG_GNSS_MTK
+
+        make olddefconfig
+
+    - name: Build GNSS modules
+      working-directory: kernel
+      run: |
+        make -j$(nproc) M=drivers/gnss modules
+        make -j$(nproc) M=drivers/gnss/serial modules
+
+    - name: Upload GNSS .ko modules
+      uses: actions/upload-artifact@v4
+      with:
+        name: gnss-modules
+        path: |
+          kernel/drivers/gnss/*.ko
+          kernel/drivers/gnss/serial/*.ko
