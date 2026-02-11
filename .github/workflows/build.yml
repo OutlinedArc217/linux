@@ -12,7 +12,6 @@ jobs:
 
     env:
       KERNEL_DIR: ${{ github.workspace }}
-      RAMDISK_DIR: ${{ github.workspace }}/ramdisk
       OUTPUT_DIR: ${{ github.workspace }}/out
 
     steps:
@@ -24,7 +23,7 @@ jobs:
       - name: Setup build environment
         run: |
           sudo apt update
-          sudo apt install -y mkbootimg bc bison flex libssl-dev libncurses-dev build-essential cpio python3 gcc-aarch64-linux-gnu wget
+          sudo apt install -y bc bison flex libssl-dev libncurses-dev build-essential python3 gcc-aarch64-linux-gnu wget
 
       - name: Prepare output directory
         run: mkdir -p $OUTPUT_DIR
@@ -37,7 +36,6 @@ jobs:
       - name: Enable required config options
         run: |
           cd $KERNEL_DIR
-          # GPU / DRM / framebuffer
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_KGSL
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_KGSL_ADRENO
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_KGSL_DMA
@@ -62,7 +60,6 @@ jobs:
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_FB_CFB_COPYAREA
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_FB_CFB_IMAGEBLIT
 
-          # Docker / container / network / FS / power
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_KVM
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_KVM_ARM_HOST
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_VHOST_NET
@@ -86,7 +83,6 @@ jobs:
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_CPU_IDLE
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_CPUFREQ
 
-          # 生成完整配置
           make O=$OUTPUT_DIR olddefconfig
 
       - name: Build kernel
@@ -94,22 +90,8 @@ jobs:
           cd $KERNEL_DIR
           make -j$(nproc) O=$OUTPUT_DIR ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image dtbs modules
 
-      - name: Pack boot.img
-        run: |
-          mkdir -p $OUTPUT_DIR/boot_tmp
-          cp $OUTPUT_DIR/arch/arm64/boot/Image $OUTPUT_DIR/boot_tmp/
-          cp -r $RAMDISK_DIR/* $OUTPUT_DIR/boot_tmp/
-          cd $OUTPUT_DIR/boot_tmp
-          find . | cpio -H newc -o | gzip > $OUTPUT_DIR/ramdisk.cpio.gz
-          mkbootimg \
-            --kernel $OUTPUT_DIR/arch/arm64/boot/Image \
-            --ramdisk $OUTPUT_DIR/ramdisk.cpio.gz \
-            --base 0x80000000 \
-            --cmdline "earlycon root=UUID=239798af-b82a-4547-b4d4-448ab8335552 console=ttyMSM0,115200 rw androidboot.emmc=true androidboot.serialno=4cef3901 androidboot.baseband=msm mdss_mdp.panel=0:dsi:0:" \
-            --output $OUTPUT_DIR/boot.img
-
-      - name: Upload boot.img
+      - name: Upload kernel artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: boot-image
-          path: ${{ env.OUTPUT_DIR }}/boot.img
+          name: kernel-artifacts
+          path: ${{ env.OUTPUT_DIR }}/arch/arm64/boot/Image
