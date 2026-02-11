@@ -1,4 +1,4 @@
-name: Build MSM8916 Kernel
+name: Build MSM8916 Kernel for OPPO A33
 
 on:
   push:
@@ -23,7 +23,8 @@ jobs:
       - name: Setup build environment
         run: |
           sudo apt update
-          sudo apt install -y bc bison flex libssl-dev libncurses-dev build-essential python3 gcc-aarch64-linux-gnu wget
+          sudo apt install -y bc bison flex libssl-dev libncurses-dev \
+            build-essential python3 gcc-aarch64-linux-gnu wget
 
       - name: Prepare output directory
         run: mkdir -p $OUTPUT_DIR
@@ -36,62 +37,87 @@ jobs:
       - name: Enable required config options
         run: |
           cd $KERNEL_DIR
-          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_KGSL
-          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_KGSL_ADRENO
-          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_KGSL_DMA
+          
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM
-          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_KMS_HELPER
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_MSM
-          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_MSM_GPU_STATE
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_MSM_MDSS
-          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_MSM_MDP4
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_MSM_MDP5
-          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_MSM_DPU
-          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_MSM_DP
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_MSM_DSI
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_PANEL
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_FBDEV_EMULATION
-          scripts/config --file $OUTPUT_DIR/.config --set-val CONFIG_DRM_FBDEV_OVERALLOC 100
-          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_LEGACY
-          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_LOAD_EDID_FIRMWARE
-          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_FB
+    
+    
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_FB
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_FB_CFB_FILLRECT
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_FB_CFB_COPYAREA
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_FB_CFB_IMAGEBLIT
-
+    
+    
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_VIRTUALIZATION
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_KVM
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_KVM_ARM_HOST
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_VHOST_NET
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_VHOST_VSOCK
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_VHOST
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_TUN
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_MACVTAP
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_VFIO
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_VFIO_PCI
+    
+    
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_NAMESPACES
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_CGROUPS
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_CGROUP_CPUACCT
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_MEMCG
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_USER_NS
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_OVERLAY_FS
+    
+    
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_EXT4_FS
-          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_BTRFS_FS
-          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_XFS_FS
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_F2FS_FS
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_FUSE_FS
+    
+    
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_NETFILTER
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_BRIDGE
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_VLAN_8021Q
-          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_TCP_CONG_BBR
-          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_NET_SCH_FQ
+    
+    
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_PM
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_CPU_IDLE
           scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_CPUFREQ
 
+          
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_USB_NET_RNDIS_HOST
+
+
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_CFG80211
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_MAC80211
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_WCN36XX
+
+
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_BT
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_BT_HCIUART
+    
           make O=$OUTPUT_DIR olddefconfig
 
-      - name: Build kernel
+      - name: Build kernel and modules
         run: |
           cd $KERNEL_DIR
-          make -j$(nproc) O=$OUTPUT_DIR ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image dtbs modules
+          make -j$(nproc) O=$OUTPUT_DIR ARCH=arm64 \
+            CROSS_COMPILE=aarch64-linux-gnu- Image.gz modules
+
+      - name: Install modules
+        run: |
+          cd $KERNEL_DIR
+          make -j$(nproc) O=$OUTPUT_DIR ARCH=arm64 \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            INSTALL_MOD_PATH=$OUTPUT_DIR/modules_install modules_install
 
       - name: Upload kernel artifacts
         uses: actions/upload-artifact@v4
         with:
           name: kernel-artifacts
-          path: ${{ env.OUTPUT_DIR }}/arch/arm64/boot/Image
+          path: |
+            ${{ env.OUTPUT_DIR }}/arch/arm64/boot/Image.gz
+            ${{ env.OUTPUT_DIR }}/modules_install/lib/modules/**
