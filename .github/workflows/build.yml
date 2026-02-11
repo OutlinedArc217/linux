@@ -2,7 +2,8 @@ name: Build MSM8916 Kernel
 
 on:
   push:
-    branches: '*'
+    branches:
+      - '**'
   workflow_dispatch:
 
 jobs:
@@ -31,62 +32,62 @@ jobs:
       - name: Copy default config
         run: |
           cd $KERNEL_DIR
-          # 如果仓库里有默认 msm8916_defconfig，可用它
           make ARCH=arm64 O=$OUTPUT_DIR msm8916_defconfig
 
       - name: Enable required config options
         run: |
-          cd $OUTPUT_DIR
+          cd $KERNEL_DIR
           # GPU / DRM / framebuffer
-          scripts/config --enable CONFIG_KGSL
-          scripts/config --enable CONFIG_KGSL_ADRENO
-          scripts/config --enable CONFIG_KGSL_DMA
-          scripts/config --enable CONFIG_DRM
-          scripts/config --enable CONFIG_DRM_KMS_HELPER
-          scripts/config --enable CONFIG_DRM_MSM
-          scripts/config --enable CONFIG_DRM_MSM_GPU_STATE
-          scripts/config --enable CONFIG_DRM_MSM_MDSS
-          scripts/config --enable CONFIG_DRM_MSM_MDP4
-          scripts/config --enable CONFIG_DRM_MSM_MDP5
-          scripts/config --enable CONFIG_DRM_MSM_DPU
-          scripts/config --enable CONFIG_DRM_MSM_DP
-          scripts/config --enable CONFIG_DRM_MSM_DSI
-          scripts/config --enable CONFIG_DRM_PANEL
-          scripts/config --enable CONFIG_DRM_FBDEV_EMULATION
-          scripts/config --set-val CONFIG_DRM_FBDEV_OVERALLOC 100
-          scripts/config --enable CONFIG_DRM_LEGACY
-          scripts/config --enable CONFIG_DRM_LOAD_EDID_FIRMWARE
-          scripts/config --enable CONFIG_DRM_FB
-          scripts/config --enable CONFIG_FB
-          scripts/config --enable CONFIG_FB_CFB_FILLRECT
-          scripts/config --enable CONFIG_FB_CFB_COPYAREA
-          scripts/config --enable CONFIG_FB_CFB_IMAGEBLIT
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_KGSL
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_KGSL_ADRENO
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_KGSL_DMA
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_KMS_HELPER
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_MSM
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_MSM_GPU_STATE
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_MSM_MDSS
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_MSM_MDP4
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_MSM_MDP5
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_MSM_DPU
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_MSM_DP
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_MSM_DSI
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_PANEL
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_FBDEV_EMULATION
+          scripts/config --file $OUTPUT_DIR/.config --set-val CONFIG_DRM_FBDEV_OVERALLOC 100
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_LEGACY
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_LOAD_EDID_FIRMWARE
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_DRM_FB
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_FB
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_FB_CFB_FILLRECT
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_FB_CFB_COPYAREA
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_FB_CFB_IMAGEBLIT
 
           # Docker / container / network / FS / power
-          scripts/config --enable CONFIG_KVM
-          scripts/config --enable CONFIG_KVM_ARM_HOST
-          scripts/config --enable CONFIG_VHOST_NET
-          scripts/config --enable CONFIG_NAMESPACES
-          scripts/config --enable CONFIG_CGROUPS
-          scripts/config --enable CONFIG_CGROUP_CPUACCT
-          scripts/config --enable CONFIG_MEMCG
-          scripts/config --enable CONFIG_USER_NS
-          scripts/config --enable CONFIG_OVERLAY_FS
-          scripts/config --enable CONFIG_EXT4_FS
-          scripts/config --enable CONFIG_BTRFS_FS
-          scripts/config --enable CONFIG_XFS_FS
-          scripts/config --enable CONFIG_F2FS_FS
-          scripts/config --enable CONFIG_FUSE_FS
-          scripts/config --enable CONFIG_NETFILTER
-          scripts/config --enable CONFIG_BRIDGE
-          scripts/config --enable CONFIG_VLAN_8021Q
-          scripts/config --enable CONFIG_TCP_CONG_BBR
-          scripts/config --enable CONFIG_NET_SCH_FQ
-          scripts/config --enable CONFIG_PM
-          scripts/config --enable CONFIG_CPU_IDLE
-          scripts/config --enable CONFIG_CPUFREQ
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_KVM
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_KVM_ARM_HOST
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_VHOST_NET
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_NAMESPACES
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_CGROUPS
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_CGROUP_CPUACCT
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_MEMCG
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_USER_NS
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_OVERLAY_FS
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_EXT4_FS
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_BTRFS_FS
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_XFS_FS
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_F2FS_FS
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_FUSE_FS
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_NETFILTER
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_BRIDGE
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_VLAN_8021Q
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_TCP_CONG_BBR
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_NET_SCH_FQ
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_PM
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_CPU_IDLE
+          scripts/config --file $OUTPUT_DIR/.config --enable CONFIG_CPUFREQ
 
-          make olddefconfig
+          # 生成完整配置
+          make O=$OUTPUT_DIR olddefconfig
 
       - name: Build kernel
         run: |
@@ -97,11 +98,9 @@ jobs:
         run: |
           mkdir -p $OUTPUT_DIR/boot_tmp
           cp $OUTPUT_DIR/arch/arm64/boot/Image $OUTPUT_DIR/boot_tmp/
-          # 假设 ramdisk 里已经有 init 等
           cp -r $RAMDISK_DIR/* $OUTPUT_DIR/boot_tmp/
           cd $OUTPUT_DIR/boot_tmp
           find . | cpio -H newc -o | gzip > $OUTPUT_DIR/ramdisk.cpio.gz
-          # 使用 mkbootimg 打包
           mkbootimg \
             --kernel $OUTPUT_DIR/arch/arm64/boot/Image \
             --ramdisk $OUTPUT_DIR/ramdisk.cpio.gz \
@@ -109,9 +108,8 @@ jobs:
             --cmdline "earlycon root=UUID=239798af-b82a-4547-b4d4-448ab8335552 console=ttyMSM0,115200 rw androidboot.emmc=true androidboot.serialno=4cef3901 androidboot.baseband=msm mdss_mdp.panel=0:dsi:0:" \
             --output $OUTPUT_DIR/boot.img
 
-      
       - name: Upload boot.img
         uses: actions/upload-artifact@v4
         with:
-         name: boot-image
-         path: ${{ env.OUTPUT_DIR }}/boot.img
+          name: boot-image
+          path: ${{ env.OUTPUT_DIR }}/boot.img
