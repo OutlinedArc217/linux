@@ -24,7 +24,7 @@ jobs:
       - name: Setup build environment
         run: |
           sudo apt update
-          sudo apt install -y bc bison flex libssl-dev libncurses-dev build-essential cpio python3 gcc-aarch64-linux-gnu wget
+          sudo apt install -y mkbootimg bc bison flex libssl-dev libncurses-dev build-essential cpio python3 gcc-aarch64-linux-gnu wget
 
       - name: Prepare output directory
         run: mkdir -p $OUTPUT_DIR
